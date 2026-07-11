@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vibe Weather</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="bg-gradient"></div>
+  <div class="bg-orbs">
+    <span class="orb orb-1"></span>
+    <span class="orb orb-2"></span>
+    <span class="orb orb-3"></span>
+  </div>
+
+  <main class="container">
+    <header class="header">
+      <div class="logo">
+        <span class="logo-icon">☀</span>
+        <h1>Vibe Weather</h1>
+      </div>
+      <p class="tagline">Python · Nginx · Docker · OpenWeatherMap</p>
+    </header>
+
+    <nav class="tabs">
+      <button type="button" class="tab active" data-tab="weather">Weather</button>
+      <button type="button" class="tab" data-tab="network">Network Lab</button>
+    </nav>
+
+    <section id="tab-weather" class="tab-panel">
+      <section class="search-card">
+        <form id="search-form" class="search-form">
+          <input
+            id="city-input"
+            type="text"
+            placeholder="Search city (e.g. London, Tokyo, Dubai)"
+            autocomplete="off"
+            required
+          />
+          <button type="submit" id="search-btn">Search</button>
+        </form>
+        <div class="unit-toggle">
+          <button type="button" class="unit-btn active" data-units="metric">°C</button>
+          <button type="button" class="unit-btn" data-units="imperial">°F</button>
+        </div>
+      </section>
+
+      <section id="status" class="status hidden"></section>
+
+      <section id="weather-card" class="weather-card hidden">
+        <div class="weather-top">
+          <div>
+            <h2 id="location"></h2>
+            <p id="description" class="description"></p>
+            <p id="replica" class="replica-tag"></p>
+          </div>
+          <img id="weather-icon" alt="" width="80" height="80" />
+        </div>
+        <div class="temp-display">
+          <span id="temp" class="temp"></span>
+          <span id="unit-label" class="unit-label">°C</span>
+        </div>
+        <div class="stats">
+          <div class="stat">
+            <span class="stat-label">Feels like</span>
+            <span id="feels-like" class="stat-value"></span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Humidity</span>
+            <span id="humidity" class="stat-value"></span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Wind</span>
+            <span id="wind" class="stat-value"></span>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <section id="tab-network" class="tab-panel hidden">
+      <section class="search-card">
+        <p class="network-intro">
+          Live diagnostics from the container — TCP/UDP probes, DNS, routing, ping, traceroute.
+          Traffic flows: <strong>Client → Nginx (reverse proxy / load balancer) → App replicas</strong>.
+        </p>
+        <button type="button" id="run-diagnostics" class="diag-btn">Run Network Diagnostics</button>
+      </section>
+      <pre id="network-output" class="network-output hidden"></pre>
+    </section>
+
+    <footer class="footer">
+      <p>Data from <a href="https://openweathermap.org/api" target="_blank" rel="noopener">OpenWeatherMap</a></p>
+    </footer>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

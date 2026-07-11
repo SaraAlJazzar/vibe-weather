@@ -1,106 +1,93 @@
-# Vibe Weather
+# Vibe Weather (Python)
 
-A modern weather web app powered by the [OpenWeatherMap API](https://openweathermap.org/api), containerized with Docker, and deployed automatically via GitHub Actions.
+A weather web app built with **Python FastAPI**, **Nginx reverse proxy**, and **Docker** — designed to demonstrate networking and container internals.
 
-## Features
+## Stack
 
-- Search weather by city name (metric / imperial)
-- Responsive dark UI
-- Dockerized Node.js backend
-- CI/CD: push to `main` → build image → push to GHCR → deploy to server
-- Public access on port 80
+| Layer | Technology |
+|-------|------------|
+| Backend | Python 3.12, FastAPI, uvicorn, httpx |
+| Reverse Proxy / LB | Nginx (least_conn upstream) |
+| API | [OpenWeatherMap](https://openweathermap.org/api) |
+| Containers | Multi-stage Dockerfile, BuildKit, OCI runtime |
+| Registry | GitHub Container Registry (`ghcr.io`) |
+| CI/CD | GitHub Actions → build → push → SSH deploy |
 
-## Quick Start (Local)
+## Architecture
 
-```bash
-cp .env.example .env
-# Add your OpenWeatherMap API key to .env
-
-npm install
-npm start
-# Open http://localhost:3000
+```
+Internet → DNS → Firewall (ufw) → Nginx :80/:443 → App replicas :8000 → OpenWeatherMap
+                     ↑ public IP          ↑ edge_net    ↑ backend_net (private)
 ```
 
-Or with Docker:
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for full coverage of:
+
+- VPC / subnet analogy, NAT, public vs private IP
+- TCP vs UDP, HTTP vs HTTPS, DNS, Ethernet
+- Ping, traceroute, routing, ports & firewall
+- Load balancing, multi-stage builds, BuildKit, layer caching
+- Docker networking, storage, image internals, OCI runtime
+- Compose advanced features, logging drivers, Docker registry
+
+## Quick Start
 
 ```bash
-docker compose up --build
+cp .env.example .env          # add OPENWEATHER_API_KEY
+DOCKER_BUILDKIT=1 docker compose up --build --scale app=2
+# → http://localhost  (Nginx on port 80, 2 app replicas load-balanced)
 ```
 
-## Server Requirements (Minimum)
+## Network Lab UI
+
+Open the **Network Lab** tab in the browser to run live diagnostics:
+
+- Container IPs and routing table
+- DNS lookup, TCP/UDP probes
+- Ping (ICMP) and traceroute
+- Docker/networking concept reference
+
+API: `GET /api/network/diagnostics`
+
+## Local Python Dev (without Docker)
+
+```bash
+pip install -r app/requirements.txt
+cd app && OPENWEATHER_API_KEY=your_key uvicorn main:app --reload --port 8000
+```
+
+## Server Requirements
 
 | Resource | Minimum |
 |----------|---------|
-| CPU      | 1 vCPU  |
-| RAM      | 512 MB  |
-| Disk     | 10 GB   |
-| OS       | Ubuntu 22.04+ |
-| Ports    | 22 (SSH), 80 (HTTP) |
+| CPU | 1 vCPU |
+| RAM | 512 MB |
+| OS | Ubuntu 22.04+ |
+| Ports | 22, 80, 443 |
 
-Recommended providers: [Hetzner CX11](https://www.hetzner.com/cloud) (~€4/mo), [DigitalOcean Basic](https://www.digitalocean.com/pricing/droplets) ($4/mo), [AWS t4g.micro](https://aws.amazon.com/ec2/instance-types/t4/) (free tier eligible).
+## Deploy
 
-## One-Time Server Setup
+1. Run `deploy/setup-server.sh` on your VPS
+2. Add GitHub secrets: `OPENWEATHER_API_KEY`, `SERVER_HOST`, `SERVER_USER`, `SSH_PRIVATE_KEY`
+3. Push to `main` — CI/CD deploys Nginx + 2 app replicas automatically
 
-SSH into your new server and run:
+## HTTPS
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/YOUR_USERNAME/vibe-weather/main/deploy/setup-server.sh | bash
-```
-
-Or clone the repo and run `./deploy/setup-server.sh`.
-
-Add the deploy public key to `~/.ssh/authorized_keys`:
-
-```bash
-# Run locally
-./deploy/generate-deploy-key.sh
-# Copy deploy_key.pub content to server's ~/.ssh/authorized_keys
-```
-
-## GitHub Secrets
-
-Add these in **Settings → Secrets and variables → Actions**:
-
-| Secret | Description |
-|--------|-------------|
-| `OPENWEATHER_API_KEY` | From [openweathermap.org/api](https://openweathermap.org/api) |
-| `SERVER_HOST` | Server public IP or domain |
-| `SERVER_USER` | SSH username (e.g. `ubuntu`, `root`) |
-| `SSH_PRIVATE_KEY` | Private key from `deploy/generate-deploy-key.sh` |
-| `GHCR_TOKEN` | GitHub PAT with `read:packages` (only if repo/package is private) |
-
-`GITHUB_TOKEN` is provided automatically for pushing to GitHub Container Registry.
-
-## CI/CD Pipeline
-
-On every push to `main`:
-
-1. **Test** — install deps, verify server health endpoint
-2. **Build & Push** — build Docker image, push to `ghcr.io/<owner>/vibe-weather:latest`
-3. **Deploy** — SSH to server, pull latest image, restart container on port 80
-
-## Manual Docker Push
-
-```bash
-docker build -t ghcr.io/YOUR_USERNAME/vibe-weather:latest .
-echo $GITHUB_TOKEN | docker login ghcr.io -u YOUR_USERNAME --password-stdin
-docker push ghcr.io/YOUR_USERNAME/vibe-weather:latest
-```
+Mount TLS certs to the `cert_data` volume and uncomment the SSL server block in `nginx/conf.d/default.conf`. See architecture docs for certbot steps.
 
 ## Project Structure
 
 ```
 vibe-weather/
-├── .github/workflows/deploy.yml   # CI/CD pipeline
-├── deploy/
-│   ├── setup-server.sh            # Server bootstrap script
-│   └── generate-deploy-key.sh     # SSH key generator for Actions
-├── src/
-│   ├── server.js                  # Express API + static files
-│   └── public/                    # Frontend UI
-├── Dockerfile
-├── docker-compose.yml             # Local dev
-└── docker-compose.prod.yml        # Production (port 80)
+├── app/                    # Python FastAPI application
+│   ├── main.py
+│   ├── weather.py
+│   ├── network_info.py     # Ping, traceroute, TCP/UDP diagnostics
+│   └── static/             # Frontend UI
+├── nginx/                  # Reverse proxy + load balancer
+├── docker/Dockerfile       # Multi-stage BuildKit image
+├── docker-compose.yml      # Advanced compose (networks, volumes, logging)
+├── docs/ARCHITECTURE.md    # Networking & Docker deep dive
+└── .github/workflows/      # CI/CD pipeline
 ```
 
 ## License

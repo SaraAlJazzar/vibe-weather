@@ -4,6 +4,10 @@ const searchBtn = document.getElementById('search-btn');
 const statusEl = document.getElementById('status');
 const weatherCard = document.getElementById('weather-card');
 const unitBtns = document.querySelectorAll('.unit-btn');
+const tabs = document.querySelectorAll('.tab');
+const tabPanels = document.querySelectorAll('.tab-panel');
+const diagBtn = document.getElementById('run-diagnostics');
+const networkOutput = document.getElementById('network-output');
 
 let units = 'metric';
 
@@ -27,6 +31,9 @@ function showWeather(data) {
   document.getElementById('wind').textContent = `${data.wind} ${units === 'imperial' ? 'mph' : 'm/s'}`;
   document.getElementById('weather-icon').src = `https://openweathermap.org/img/wn/${data.icon}@2x.png`;
   document.getElementById('weather-icon').alt = data.description;
+  document.getElementById('replica').textContent = data.replica
+    ? `Served by replica: ${data.replica} (via Nginx load balancer)`
+    : '';
 
   weatherCard.classList.remove('hidden');
   clearStatus();
@@ -42,7 +49,7 @@ async function fetchWeather(city) {
     const data = await response.json();
 
     if (!response.ok) {
-      setStatus(data.error || 'Something went wrong', 'error');
+      setStatus(data.detail || data.error || 'Something went wrong', 'error');
       return;
     }
 
@@ -67,6 +74,34 @@ unitBtns.forEach((btn) => {
     const city = cityInput.value.trim();
     if (city) fetchWeather(city);
   });
+});
+
+tabs.forEach((tab) => {
+  tab.addEventListener('click', () => {
+    const target = tab.dataset.tab;
+    tabs.forEach((t) => t.classList.toggle('active', t === tab));
+    tabPanels.forEach((panel) => {
+      panel.classList.toggle('hidden', panel.id !== `tab-${target}`);
+    });
+  });
+});
+
+diagBtn.addEventListener('click', async () => {
+  diagBtn.disabled = true;
+  diagBtn.textContent = 'Running…';
+  networkOutput.classList.remove('hidden');
+  networkOutput.textContent = 'Collecting diagnostics…';
+
+  try {
+    const response = await fetch('/api/network/diagnostics');
+    const data = await response.json();
+    networkOutput.textContent = JSON.stringify(data, null, 2);
+  } catch {
+    networkOutput.textContent = 'Failed to run diagnostics';
+  } finally {
+    diagBtn.disabled = false;
+    diagBtn.textContent = 'Run Network Diagnostics';
+  }
 });
 
 cityInput.value = 'London';
