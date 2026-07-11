@@ -1,0 +1,10 @@
+services:
+  app:
+    image: ${IMAGE:-ghcr.io/your-username/vibe-weather:latest}
+    ports:
+      - "80:3000"
+    environment:
+      - PORT=3000
+      - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
+    restart: always
+    pull_policy: always

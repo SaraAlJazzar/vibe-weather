@@ -1,0 +1,16 @@
+{
+  "name": "vibe-weather",
+  "version": "1.0.0",
+  "description": "Weather app powered by OpenWeatherMap API",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
