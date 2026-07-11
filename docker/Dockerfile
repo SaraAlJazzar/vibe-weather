@@ -25,7 +25,7 @@ LABEL org.opencontainers.image.title="vibe-weather" \
       org.opencontainers.image.source="https://github.com/your-username/vibe-weather" \
       org.opencontainers.image.licenses="MIT"
 
-# Install iproute2 (ip route) + ping + traceroute for network diagnostics
+# Install iproute2, ping, traceroute for docker compose exec debugging
 RUN apt-get update && apt-get install -y --no-install-recommends \
         iproute2 iputils-ping traceroute \
     && rm -rf /var/lib/apt/lists/*

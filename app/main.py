@@ -7,7 +7,6 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from network_info import full_diagnostics, network_concepts
 from weather import fetch_weather
 
 app = FastAPI(title="Vibe Weather", version="2.0.0")
@@ -34,17 +33,6 @@ async def weather(
         return await fetch_weather(city.strip(), units)
     except ValueError as exc:
         raise HTTPException(status_code=502 if "configured" in str(exc) else 400, detail=str(exc))
-
-
-@app.get("/api/network/diagnostics")
-async def network_diagnostics():
-    """Ping, traceroute, TCP/UDP probes, routing table, DNS — networking lab."""
-    return full_diagnostics()
-
-
-@app.get("/api/network/concepts")
-async def concepts():
-    return network_concepts()
 
 
 @app.get("/")
