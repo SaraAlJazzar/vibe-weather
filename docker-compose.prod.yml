@@ -28,7 +28,7 @@ services:
         max-file: "5"
 
   app:
-    image: ${APP_IMAGE:-ghcr.io/your-username/vibe-weather:latest}
+    image: ${APP_IMAGE:-ghcr.io/saraaljazzar/vibe-weather:latest}
     expose:
       - "8000"
     environment:

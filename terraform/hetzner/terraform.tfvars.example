@@ -1,0 +1,3 @@
+# Copy to terraform.tfvars and fill in (do NOT commit terraform.tfvars)
+hcloud_token   = "your-hetzner-api-token"
+ssh_public_key = "ssh-ed25519 AAAA... your@email"

@@ -75,54 +75,26 @@ jobs:
   deploy:
     needs: build-and-push
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Sync configs and deploy via SSH
-        uses: appleboy/ssh-action@v1.2.0
+      - name: Deploy via Docker Compose
         env:
-          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
           OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
           APP_IMAGE: ghcr.io/${{ github.repository }}:latest
-          REPO: ${{ github.repository }}
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: GHCR_TOKEN,OPENWEATHER_API_KEY,APP_IMAGE,REPO
-          script: |
-            set -e
-            APP_DIR="/opt/vibe-weather"
-            mkdir -p "$APP_DIR/nginx/conf.d"
-
-            # Sync nginx configs (reverse proxy) from repo
-            curl -fsSL "https://raw.githubusercontent.com/${REPO}/main/nginx/nginx.conf" \
-              -o "$APP_DIR/nginx/nginx.conf"
-            curl -fsSL "https://raw.githubusercontent.com/${REPO}/main/nginx/conf.d/default.conf" \
-              -o "$APP_DIR/nginx/conf.d/default.conf"
-            curl -fsSL "https://raw.githubusercontent.com/${REPO}/main/docker-compose.prod.yml" \
-              -o "$APP_DIR/docker-compose.prod.yml"
-
-            cd "$APP_DIR"
-            export OPENWEATHER_API_KEY APP_IMAGE
-
-            if [ -n "$GHCR_TOKEN" ]; then
-              echo "$GHCR_TOKEN" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            fi
-
-            docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d --scale app=2 --remove-orphans
-            docker image prune -f
+          DOCKER_HOST: unix:///home/saraaljazzar/.docker/desktop/docker.sock
+        run: |
+          set -e
+          echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          export OPENWEATHER_API_KEY APP_IMAGE
+          docker compose -f docker-compose.prod.yml pull
+          docker compose -f docker-compose.prod.yml up -d --scale app=2 --remove-orphans
+          docker image prune -f
 
       - name: Verify deployment through Nginx
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            sleep 8
-            curl -sf http://localhost/api/health
-            curl -sf http://localhost/api/network/concepts | head -c 200
+        run: |
+          sleep 8
+          curl -sf http://localhost/api/health
+          curl -sf http://localhost/ | head -c 100
